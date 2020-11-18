@@ -3,6 +3,7 @@ using namespace std;
 
 struct node {
     int data;
+    node *prev = nullptr;
     node *next = nullptr;
 };
 
@@ -21,7 +22,6 @@ struct list {
     void print();
     void sort(string logic = "gtr");
     node *find(int data, string logic = "equ");
-    node *prev(node *address);
 };
 
 void list::push_head(int data) {
@@ -31,6 +31,7 @@ void list::push_head(int data) {
             head = tail = current;
         } else {
             current->next = head;
+            head->prev = current;
             head = current;
         }
     }
@@ -42,6 +43,7 @@ void list::push_tail(int data) {
         if (head == nullptr) {
             head = tail = current;
         } else {
+            current->prev = tail;
             tail->next = current;
             tail = current;
         }
@@ -57,8 +59,10 @@ void list::push(int data, node *address) {
     } else {
         node *current = new node {data};
         if (current != nullptr) {
+            current->prev = address->prev;
             current->next = address;
-            prev(address)->next = current;
+            address->prev->next = current;
+            address->prev = current;
         }
     }
 }
@@ -70,6 +74,7 @@ void list::pop_head() {
             head = tail = nullptr;
         } else {
             head = head->next;
+            head->prev = nullptr;
         }
         delete[] current;
     }
@@ -81,7 +86,7 @@ void list::pop_tail() {
         if (head == tail) {
             head = tail = nullptr;
         } else {
-            tail = prev(tail);
+            tail = tail->prev;
             tail->next = nullptr;
         }
         delete[] current;
@@ -95,7 +100,8 @@ void list::pop(node *address) {
         } else if (address == tail) {
             pop_tail();
         } else {
-            prev(address)->next = address->next;
+            address->prev->next = address->next;
+            address->next->prev = address->prev;
             delete[] address;
         }
     }
@@ -112,19 +118,19 @@ void list::print() {
 
 // Todo: switch to merge sort
 void list::sort(string logic) {
-    for (node *i = head; i != tail; i = i->next) {
-        for (node *j = i->next; j != nullptr; j = j->next) {
+    for (node *i = head->next; i != nullptr; i = i->next) {
+        for (node *j = i; j != head; j = j->prev) {
             bool condition = 0;
             if (logic == "lss") { // Descending
-                condition = i->data < j->data;
+                condition = j->prev->data < j->data;
             } else if (logic == "gtr") { // Ascending
-                condition = i->data > j->data;
+                condition = j->prev->data > j->data;
             }
             if (condition) {
-                int temp = i->data;
-                i->data = j->data;
-                j->data = temp;
-            }
+                int temp = j->data;
+                j->data = j->prev->data;
+                j->prev->data = temp;
+            } else break;
         }
     }
 }
@@ -140,13 +146,6 @@ node *list::find(int data, string logic) {
             condition = i->data > data;
         }
         if (condition) return i;
-    }
-    return nullptr;
-}
-
-node *list::prev(node *address) {
-    for (node *i = head; i != nullptr; i = i->next) {
-        if (i->next == address) return i;
     }
     return nullptr;
 }
